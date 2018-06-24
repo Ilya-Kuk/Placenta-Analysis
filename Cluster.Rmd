@@ -1,0 +1,60 @@
+---
+  title: "Placenta Analysis"
+author: "Ilya Kukovitskiy"
+date: "June 21, 2018"
+output: html_document
+self_contained: no
+---
+  
+  ```{r,results='hide',message=FALSE}
+set.seed(1)
+```
+
+# RGB data
+
+## Data Preprocessing
+
+#### Reading in and storing dataset from file
+
+```{r}
+x <- read.csv('ProjectStatistics_UNCSlideStainChar.csv')
+attach(x)
+colnames(x)
+```
+
+#### Removing undesired variables, scene_name, scene_id, scene_ver
+
+```{r}
+# Removing row 17:
+x <- x[,-c(1,2,3)]
+attach(x)
+```
+
+#### In order to perform cluster analysis, normalizing all columns
+
+```{r}
+x <- scale(x)
+```
+
+## Data Analysis
+
+### There are several different measures of distance between clusters, performing the most common ones: complete, average, and single
+
+```{r}
+# complete
+hc.complete <- hclust(dist(x), method="complete")
+# average
+hc.average <- hclust(dist(x), method="average")
+# single
+hc.single <- hclust(dist(x), method="single")
+```
+
+### Plot
+
+```{r}
+plot(hc.complete)
+plot(hc.average)
+plot(hc.single)
+```
+
+### 
