@@ -1,12 +1,12 @@
 ---
-  title: "Placenta Analysis"
+title: "Placenta Analysis - Slide Stain Cluster"
 author: "Ilya Kukovitskiy"
-date: "June 21, 2018"
+date: "June 24, 2018"
 output: html_document
 self_contained: no
 ---
   
-  ```{r,results='hide',message=FALSE}
+```{r,results='hide',message=FALSE}
 set.seed(1)
 ```
 
