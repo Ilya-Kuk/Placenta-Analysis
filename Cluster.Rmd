@@ -8,6 +8,8 @@ self_contained: no
   
 ```{r,results='hide',message=FALSE}
 set.seed(1)
+require(cluster)
+require(clValid)
 ```
 
 # RGB data
@@ -55,6 +57,76 @@ hc.single <- hclust(dist(x), method="single")
 plot(hc.complete)
 plot(hc.average)
 plot(hc.single)
+# the height represents the distance between clusters
 ```
 
-### 
+### Looks like observation 371 is an outlier, among all clusters. Removing this observation.
+
+```{r}
+x1 <- x[-371,]
+```
+
+### Clustering and Plotting
+
+```{r}
+## Hierarchal
+# complete
+hc.complete1 <- hclust(dist(x1), method="complete")
+# average
+hc.average1 <- hclust(dist(x1), method="average")
+# single
+hc.single1 <- hclust(dist(x1), method="single")
+## K-Means
+k.2 <- kmeans(x1, 2)
+k.3 <- kmeans(x1, 3)
+k.4 <- kmeans(x1, 4)
+k.5 <- kmeans(x1, 5)
+k.6 <- kmeans(x1, 6)
+## Divisive Analysis Clustering
+diana(x1)
+## Self-Orgganizing Tree Algorithm
+sota(x1)
+## 
+
+## Plotting
+plot(hc.complete1)
+plot(hc.average1)
+plot(hc.single1)
+# the height represents the distance between clusters
+```
+
+
+```{r}
+intern <- clValid(x1, 2:8, clMethods = c("hierarchal", "kmeans", "diana", "sota", "pam"), validation = "internal", maxitems = 800)
+summary(intern)
+plot(intern)
+# pam is very similar to kmeans. I will use the simpler and more well-known kmeans algorithm with 2 clusters.
+k2 <- clValid(x1, 2, clMethods = "kmeans", validation = "internal", maxitems = 800)
+plot(k2)
+```
+
+
+
+
+### Viewing Cluster distance points.
+
+```{r}
+# heights
+comp.h <- hc.complete1$height
+ave.h <- hc.average1$height
+sing.h <- hc.single1$height
+# plot
+plot(1:length(comp.h),comp.h)
+plot(1:length(ave.h),ave.h)
+plot(1:length(sing.h),sing.h)
+```
+Looks like the vast majority of clusters are within 3 units of each other. 
+
+### Find a way to methodologically justifiy a height cutoff line.
+#### Consider some proporion of the Area Under the Curve. 
+
+```{r}
+
+```
+
+
