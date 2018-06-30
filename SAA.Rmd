@@ -75,19 +75,34 @@ sd(d20$TotalVilliArea.sqmm.)
 At first I was running to check distributions rather than assume that it is normal, to disprove the t-test. However, upon looking at the variable in question, the means are exactly 4 apart, with similar standard deviations, and almost identical distributions.
 
 
-### Check Distribution of Data
+Another Idea: Pixel count is essentially double-integration. Theoretically, depending on the pixel counting algorithm, a refinement can increase all values by some amount. Research this? 
+If there was such an effect, MOST if not ALL differences would be the same sign. 
 
 ```{r}
+diffTVA <- d10$TotalVilliArea.sqmm. - d20$TotalVilliArea.sqmm.
+plot(diffTVA)
+# These are all positive! 
+```
+
+
+```{r}
+### Check Distribution of Data
+
+
 ## fitdist
 # Fitting weibull and normal distribution
-fit.weibull <- fitdist(d10[,2], "weibull")
-fit.norm <- fitdist(d10[,2], "norm")
+
+#fit.weibull <- fitdist(d10[,2], "weibull")
+#fit.norm <- fitdist(d10[,2], "norm")
 
 # Plotting fits
-plot(fit.weibull)
-plot(fit.norm)
+
+#plot(fit.weibull)
+#plot(fit.norm)
+
+
+#Weibull distribution fits the column a bit better than Normal distribution. 
 ```
-Weibull distribution fits the column a bit better than Normal distribution. 
 
 There are over 30 paired observations, allowing for use of the t-test under the assumption of normal distribution.
 
