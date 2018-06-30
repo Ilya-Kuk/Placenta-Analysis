@@ -47,19 +47,45 @@ d10 <- d10[,-7]
 ### Viewing Data
 
 ```{r}
-for(i in 2:11){
-  plotdist(d10[,i], histo = TRUE, demp = TRUE)
-  descdist(d10[,i])
-}
+# Viewing distribution
+
+#for(i in 2:10){
+#  plotdist(d10[,i], histo = TRUE, demp = TRUE)
+#}
+# Viewing Cullen and Fray graph
+#for(i in 2:10){
+#  descdist(d10[,i])
+#}
+
+# Viewing trouble variable
+# 10
+plotdist(d10$TotalVilliArea.sqmm., histo = TRUE, demp = TRUE)
+# 20
+plotdist(d20$TotalVilliArea.sqmm., histo = TRUE, demp = TRUE)
+# Means and Standard Deviations
+# 10
+mean(d10$TotalVilliArea.sqmm.)
+sd(d10$TotalVilliArea.sqmm.)
+# 20
+mean(d20$TotalVilliArea.sqmm.)
+sd(d20$TotalVilliArea.sqmm.)
 ```
+Though some Cullen and Fray graphs indicate some possibility of uniform distribution, the density plots of the data show that none are uniform.
 
 
 ### Check Distribution of Data
 
 ```{r}
+## fitdist
+# Fitting weibull and normal distribution
+fit.weibull <- fitdist(d10[,2], "weibull")
+fit.norm <- fitdist(d10[,2], "norm")
 
+# Plotting fits
+plot(fit.weibull)
+plot(fit.norm)
 ```
-
+Weibull distribution fits the column a bit better than Normal distribution. 
 
 There are over 30 paired observations, allowing for use of the t-test under the assumption of normal distribution.
 
@@ -133,6 +159,7 @@ e <- e[,-7]
 ```
 
 ## Data Analysis
+
 There are over 30 (up to 780!) unpaired observations, allowing for use of the Welch Two Sample t-test under the assumption of normal bivariate distribution. There are much more EARLI observations than NYMH.
 
 #### Creating matrix to record t.test results
