@@ -64,13 +64,15 @@ plotdist(d10$TotalVilliArea.sqmm., histo = TRUE, demp = TRUE)
 plotdist(d20$TotalVilliArea.sqmm., histo = TRUE, demp = TRUE)
 # Means and Standard Deviations
 # 10
+print("The mean and sd for x10 are:")
 mean(d10$TotalVilliArea.sqmm.)
 sd(d10$TotalVilliArea.sqmm.)
 # 20
+print("The mean and sd for x20 are:")
 mean(d20$TotalVilliArea.sqmm.)
 sd(d20$TotalVilliArea.sqmm.)
 ```
-Though some Cullen and Fray graphs indicate some possibility of uniform distribution, the density plots of the data show that none are uniform.
+At first I was running to check distributions rather than assume that it is normal, to disprove the t-test. However, upon looking at the variable in question, the means are exactly 4 apart, with similar standard deviations, and almost identical distributions.
 
 
 ### Check Distribution of Data
