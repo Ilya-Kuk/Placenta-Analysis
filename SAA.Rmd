@@ -13,6 +13,7 @@ library(randomForest)
 library(gbm)
 library(ggplot2)
 library(tree)
+library("fitdistrplus")
 ```
 
 # NYMH x10 and x20
@@ -42,6 +43,24 @@ d10 <- d10[,-7]
 ```
 
 ## Data Analysis
+
+### Viewing Data
+
+```{r}
+for(i in 2:11){
+  plotdist(d10[,i], histo = TRUE, demp = TRUE)
+  descdist(d10[,i])
+}
+```
+
+
+### Check Distribution of Data
+
+```{r}
+
+```
+
+
 There are over 30 paired observations, allowing for use of the t-test under the assumption of normal distribution.
 
 #### Creating matrix to record t.test results
