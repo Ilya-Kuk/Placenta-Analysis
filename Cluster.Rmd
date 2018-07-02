@@ -20,6 +20,8 @@ require(clValid)
 
 ```{r}
 x <- read.csv('ProjectStatistics_UNCSlideStainChar.csv')
+# for combining datasets later
+P <- read.csv('ProjectStatistics_UNCSlideStainChar.csv')
 attach(x)
 colnames(x)
 ```
@@ -64,6 +66,8 @@ plot(hc.single)
 
 ```{r}
 x1 <- x[-371,]
+# for combining datasets
+P <- P[-371,]
 ```
 
 ### Clustering and Plotting
@@ -84,11 +88,11 @@ K2$cluster
 ### Attaching cluster vector to dataset
 
 ```{r}
-x1k2 <- cbind(x1,K2$cluster)
+x1k2 <- cbind(P,K2$cluster)
 ```
 
 ## Exporting dataset to .csv file
 
 ```{r}
-write.csv(x1, "ProjectStatistics_UNCSlideStainChar_ClusterK2.csv")
+write.csv(x1k2, "ProjectStatistics_UNCSlideStainChar_ClusterK2.csv")
 ```
