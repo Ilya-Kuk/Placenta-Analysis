@@ -1,5 +1,5 @@
 ---
-title: "Placenta Analysis"
+title: "Placenta Analysis 2"
 author: "Ilya Kukovitskiy"
 date: "June 21, 2018"
 output: html_document
@@ -14,6 +14,7 @@ library(gbm)
 library(ggplot2)
 library(tree)
 library("fitdistrplus")
+library(tibble)
 ```
 
 # NYMH x10 and x20
@@ -37,9 +38,8 @@ d10 <- d10[-17,]
 #### Seems like there's a variable in d10 that's not in d20: 'Total Stain'
 
 ```{r}
-# Removing that column:
-colnames(d10) #7
-d10 <- d10[,-7]
+# Recreating the column, which is the sum of Area_StainArtifact and Area_Hemosederin
+d20 <- add_column(d20, Total.Stain = d20$Area_StainArtifact.sqmm. + d20$Area_Hemosiderin.sqmm., .after = 'Area_Hemosiderin.sqmm.')
 ```
 
 ## Data Analysis
@@ -261,14 +261,13 @@ df <- df[,-1]
 #initial decision tree
 tree <- tree(EARLI~., data=df)
 #Plotting Tree
-plot(tree) + 
-text(tree,pretty=0)
+plot(tree)
 
 ##
-View(tree)
-View(tree$frame)
+#View(tree)
+#View(tree$frame)
 
-tree.pred <- predict(tree, type="class")
+#tree.pred <- predict(tree, type="class")
 
 ```
 
