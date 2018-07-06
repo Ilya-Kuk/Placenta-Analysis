@@ -1,12 +1,12 @@
 ---
 title: "Placenta Analysis - Slide Stain Cluster"
 author: "Ilya Kukovitskiy"
-date: "July 5, 2018"
+date: "July 6, 2018"
 output: html_document
 self_contained: no
 ---
   
-```{r,results='hide',message=FALSE}
+```{r Seeds_Packages,results='hide',message=FALSE}
 set.seed(1)
 require(cluster)
 require(clValid)
@@ -18,7 +18,7 @@ require(clValid)
 
 #### Reading in and storing dataset from file
 
-```{r}
+```{r Reading_Files}
 x <- read.csv('ProjectStatistics_UNCSlideStainChar.csv')
 # for combining datasets later
 P <- read.csv('ProjectStatistics_UNCSlideStainChar.csv')
@@ -28,7 +28,7 @@ colnames(x)
 
 #### Removing undesired variables, scene_name, scene_id, scene_ver
 
-```{r}
+```{r NaN_Column_Removal}
 # Removing row 17:
 x <- x[,-c(1,2,3)]
 attach(x)
@@ -36,68 +36,56 @@ attach(x)
 
 #### In order to perform cluster analysis, normalizing all columns
 
-```{r}
-x <- scale(x)
+```{r Scale}
+x.s <- scale(x)
 ```
 
-## Data Analysis
-
-### There are several different measures of distance between clusters, performing hierarchical clustering using the most common ones: complete, average, and single
-
-```{r}
-# complete
-hc.complete <- hclust(dist(x), method="complete")
-# average
-hc.average <- hclust(dist(x), method="average")
-# single
-hc.single <- hclust(dist(x), method="single")
-```
-
-### Plot
-
-```{r}
-plot(hc.complete)
-plot(hc.average)
-plot(hc.single)
-# the height represents the distance between clusters
-```
-
-### Looks like observation 371 is an outlier, among all clusters. Removing this observation.
-
-```{r}
-#Should I not remove the outlier?
-
-x1 <- x[-371,]
-# for combining datasets
-P <- P[-371,]
-```
+## Data Analysis (Scaled)
 
 ### Clustering and Plotting
 
-```{r}
+```{r Scaled_Euclidean}
 # Euclidean
-Euc <- clValid(x1, 2:14, clMethods = c("hierarchical", "kmeans", "diana", "sota", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = "euclidean")
+Euc.s <- clValid(x.s, 2:3, clMethods = c("hierarchical", "kmeans", "diana", "sota", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = "euclidean")
+summary(Euc.s)
+plot(Euc.s)
+```
+
+```{r Scaled_Correlation}
+# Correlation
+Cor.s <- clValid(x.s, 2:20, clMethods = c("hierarchical", "kmeans", "diana", "sota", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = "correlation")
+summary(Cor.s)
+plot(Cor.s)
+```
+
+### Remove outliers according to distance from centroids of groups. Perhaps, removing one by one and clustering the data after removal. 
+
+## Data Analysis (Not Scaled)
+
+### Clustering and Plotting
+
+```{r Unscaled_Euclidean}
+# Euclidean
+Euc <- clValid(x, 2:20, clMethods = c("hierarchical", "kmeans", "diana", "sota", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = "euclidean")
 summary(Euc)
 plot(Euc)
 ```
 
-### 
-
-```{r}
+```{r Unscaled_Correlation}
 # Correlation
-Cor <- clValid(x1, 2:14, clMethods = c("hierarchical", "kmeans", "diana", "sota", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = "correlation")
+Cor <- clValid(x, 2:20, clMethods = c("hierarchical", "kmeans", "diana", "sota", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = "correlation")
 summary(Cor)
 plot(Cor)
 ```
 
 ### Attaching cluster vector to dataset
 
-```{r}
-x1k2 <- cbind(P,K2$cluster)
+```{r Attaching_ClValues}
+#x1k2 <- cbind(P,K2$cluster)
 ```
 
 ## Exporting dataset to .csv file
 
-```{r}
-write.csv(x1k2, "ProjectStatistics_UNCSlideStainChar_ClusterK2.csv")
+```{r Exporting_File}
+#write.csv(x1k2, "ProjectStatistics_UNCSlideStainChar_ClusterK2.csv")
 ```
