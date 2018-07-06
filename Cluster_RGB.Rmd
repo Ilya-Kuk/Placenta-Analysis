@@ -42,7 +42,7 @@ x <- scale(x)
 
 ## Data Analysis
 
-### There are several different measures of distance between clusters, performing the most common ones: complete, average, and single
+### There are several different measures of distance between clusters, performing hierarchical clustering using the most common ones: complete, average, and single
 
 ```{r}
 # complete
@@ -65,7 +65,7 @@ plot(hc.single)
 ### Looks like observation 371 is an outlier, among all clusters. Removing this observation.
 
 ```{r}
-#Should I remove the outlier?
+#Should I not remove the outlier?
 
 x1 <- x[-371,]
 # for combining datasets
@@ -75,17 +75,19 @@ P <- P[-371,]
 ### Clustering and Plotting
 
 ```{r}
-# Internal
-int_sta <- clValid(x1, 2:14, clMethods = c("hierarchical", "kmeans", "diana", "sota", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = c("euclidean", "correlation"))
-summary(int_sta)
-plot(int_sta)
+# Euclidean
+Euc <- clValid(x1, 2:14, clMethods = c("hierarchical", "kmeans", "diana", "sota", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = "euclidean")
+summary(Euc)
+plot(Euc)
 ```
 
-### pam is very similar to kmeans. I will use the simpler and more well-known kmeans algorithm with 2 clusters.
+### 
 
 ```{r}
-K2 <- kmeans(x1, 2)
-K2$cluster
+# Correlation
+Cor <- clValid(x1, 2:14, clMethods = c("hierarchical", "kmeans", "diana", "sota", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = "correlation")
+summary(Cor)
+plot(Cor)
 ```
 
 ### Attaching cluster vector to dataset
