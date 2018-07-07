@@ -1,7 +1,7 @@
 ---
 title: "Placenta Analysis 2"
 author: "Ilya Kukovitskiy"
-date: "July 2, 2018"
+date: "July 6, 2018"
 output: html_document
 self_contained: no
 ---
@@ -36,7 +36,7 @@ NAs <- df[,c('BW_g', 'PW_g', 'GA_wk', 'Gender', 'Calculated.Beta')]
 sapply(NAs, function(x) sum(is.na(x)))
 ```
 
-### Birth Weight, Placental Weight, Gestational Age, Gender, and the log ratio of Placental to Birth Weight. 
+The variables with NAs are: Birth Weight, Placental Weight, Gestational Age, Gender, and the log ratio of Placental to Birth Weight. 
 
 #### (Gestational Age is extremely important in a pregnancy?) And 176 entries would be removed. Instead, the average for the group NCS or EARLI will be computed for each NA.
 
@@ -70,227 +70,39 @@ for(i in which(df[,1]==2)){
 df <- na.omit(df)
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## Data Analysis
-
-### Viewing Data
+#### Logistic Regression Requires 0s and 1s. Subtracting 1 from all NCS or EARLI values
 
 ```{r}
-# Viewing distribution
-
-#for(i in 2:10){
-#  plotdist(d10[,i], histo = TRUE, demp = TRUE)
-#}
-# Viewing Cullen and Fray graph
-#for(i in 2:10){
-#  descdist(d10[,i])
-#}
-
-# Viewing trouble variable
-# 10
-plotdist(d10$TotalVilliArea.sqmm., histo = TRUE, demp = TRUE)
-# 20
-plotdist(d20$TotalVilliArea.sqmm., histo = TRUE, demp = TRUE)
-# Means and Standard Deviations
-# 10
-print("The mean and sd for x10 are:")
-mean(d10$TotalVilliArea.sqmm.)
-sd(d10$TotalVilliArea.sqmm.)
-# 20
-print("The mean and sd for x20 are:")
-mean(d20$TotalVilliArea.sqmm.)
-sd(d20$TotalVilliArea.sqmm.)
+df[,1] <- df[,1]-1
 ```
-At first I was running to check distributions rather than assume that it is normal, to disprove the t-test. However, upon looking at the variable in question, the means are exactly 4 apart, with similar standard deviations, and almost identical distributions.
 
+## Data Analysis - Clustering
 
-Another Idea: Pixel count is essentially double-integration. Theoretically, depending on the pixel counting algorithm, a refinement can increase all values by some amount. Research this? 
-If there was such an effect, MOST if not ALL differences would be the same sign. 
-
-```{r}
-diffTVA <- d10$TotalVilliArea.sqmm. - d20$TotalVilliArea.sqmm.
-plot(diffTVA)
-# These are all positive! 
-```
 
 
 ```{r}
-### Check Distribution of Data
 
-
-## fitdist
-# Fitting weibull and normal distribution
-
-#fit.weibull <- fitdist(d10[,2], "weibull")
-#fit.norm <- fitdist(d10[,2], "norm")
-
-# Plotting fits
-
-#plot(fit.weibull)
-#plot(fit.norm)
-
-
-#Weibull distribution fits the column a bit better than Normal distribution. 
 ```
 
-There are over 30 paired observations, allowing for use of the t-test under the assumption of normal distribution.
 
-#### Creating matrix to record t.test results
+## Data Analysis - Prediction
 
-```{r}
-A_ttest <- matrix(c("",""),
-                    nrow=1,
-                    ncol=4)
-colnames(A_ttest) <- c("Variable","t-stat","p-value","estimated mean of differences")
-```
 
-#### Performing and recording t-test for each variable
 
-```{r}
-for(i in 2:ncol(d20)){
-  I<-i
-  X<-t.test(d10[,I],d20[,I],paired = TRUE)
-  A_ttest <- rbind(A_ttest,c(colnames(d10)[I],X[c(1,3,5)]))
-}
-```
-
-#### Cleaning and looking at matrix
-
-```{r}
-# removing first row
-A_ttest <- A_ttest[-1,]
-
-# organizing matrix by p-value (statistical significance)
-A_ttest <- A_ttest[order(as.numeric(A_ttest[,3]),decreasing=FALSE),]
-
-# looking at matrix
-A_ttest
-```
-
-#### Removing non-statistically significant variables
-The null hypothesis is that there is no change between the variables of the first (x10) set and the second (x20) set of data. With a p-value of .05 or less, this null hypothesis is rejected, concluding that there was a consistent change between them.
-
-t-test measures t-value, if t=0, null hypothesis is confirmed. The distance from 0 to determine statistical significance is given by the p-value. Generally, a p-value of .05 is used. The difference between means of the columns is given by mean of differences.
-
-```{r}
-# removing the cases where p>.05 and the null hypothesis cannot be rejected
-# these remaining variables are different between the two datasets.
-A_ttest <- A_ttest[A_ttest[,3]<0.05,]
-A_ttest
-```
-
-## Conclusion
-Several variables differ between the x10 and x20 magnifications of the NYMH Hemosederin stains. Interpretation of estimates is left to consulting.
-
-# NYMH and EARLI
-
-## Data Preprocessing
-
-#### Reading in and storing datasets from file
-
-```{r}
-e <- read.csv('HemosiderinStatistics_EARLI_20x.csv')
-n <- read.csv('HemosiderinStatistics_NYMH_20x.csv')
-e <- na.omit(e) #no omits!
-n <- na.omit(n) #no omits!
-```
-
-#### Seems like there's a variable in e that's not in n: 'Total Stain'
-
-```{r}
-colnames(e) #7
-colnames(n)
-# Removing that column:
-e <- e[,-7]
-```
-
-## Data Analysis
-
-There are over 30 (up to 780!) unpaired observations, allowing for use of the Welch Two Sample t-test under the assumption of normal bivariate distribution. There are much more EARLI observations than NYMH.
-
-#### Creating matrix to record t.test results
-
-```{r}
-A_ttest <- matrix(c("",""),
-                    nrow=1,
-                    ncol=4)
-colnames(A_ttest) <- c("Variable","t-stat","p-value","estimated mean of differences")
-```
-
-#### Performing and recording t-test for each variable
-
-```{r}
-for(i in 2:ncol(d20)){
-  I<-i
-  X<-t.test(d10[,I],d20[,I],paired = FALSE)
-  A_ttest <- rbind(A_ttest,c(colnames(d10)[I],X[c(1,3,5)]))
-}
-```
-
-#### Cleaning and looking at matrix
-
-```{r}
-# removing first row
-A_ttest <- A_ttest[-1,]
-
-# organizing matrix by p-value (statistical significance)
-A_ttest <- A_ttest[order(as.numeric(A_ttest[,3]),decreasing=FALSE),]
-
-# looking at matrix
-A_ttest
-```
-
-#### Removing non-statistically significant variables
-The null hypothesis is that there is no change between the variables of the first (x10) set and the second (x20) set of data. With a p-value of .05 or less, this null hypothesis is rejected, concluding that there was a consistent change between them.
-
-t-test measures t-value, if t=0, null hypothesis is confirmed. The distance from 0 to determine statistical significance is given by the p-value. Generally, a p-value of .05 is used. The difference between means of the columns is given by mean of differences.
-
-```{r}
-# removing the cases where p>.05 and the null hypothesis cannot be rejected
-# these remaining variables are different between the two datasets.
-A_ttest <- A_ttest[A_ttest[,3]<0.05,]
-A_ttest
-```
-
-## Conclusion
-The only variable that has a significant difference in means is Area_STainArtifact.sqmm. Interpretation will be left to consulation, but it's unfortunate that only one variable seemed different. 
-
-### To improve this, I will try to predict whether an observation belongs to EARLI or NYMH. 
-
-#### Adding Variable and Combining datasets
-
-```{r}
-e <- cbind(e,rep(1,nrow(e)))
-n <- cbind(n,rep(0,nrow(n)))
-colnames(e)[11] <- colnames(n)[11] <- 'EARLI'
-df <- rbind(e,n)
-attach(df)
-```
-
-#### Simple Logistic Regression
+### Simple Logistic Regression
 
 ```{r}
 #initial logistic regression
-glm <- glm(EARLI~., data=df, family='binomial')
+glm <- glm(ï..NCS.or.EARLI~.-Placenta.ID, data=df, family='binomial')
+summary(glm)
 ```
 
-#### The algorithm didn't work without training/test set split. It seems like there aren't enough observations of NYMH data to make a logistic regression model.
+#### Training and Testing Logistic Regression
+
+```{r}
+
+```
+
 
 #### Simple Decision Tree
 
