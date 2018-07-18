@@ -20,9 +20,8 @@ require(clValid)
 
 ```{r Reading_Files}
 x <- read.csv('ProjectStatistics_UNCSlideStainChar.csv')
-# for combining datasets later
-P <- read.csv('ProjectStatistics_UNCSlideStainChar.csv')
-attach(x)
+# Copying dataset for later exporting
+Final <- x
 colnames(x)
 ```
 
@@ -31,10 +30,9 @@ colnames(x)
 ```{r NaN_Column_Removal}
 # Removing row 17:
 x <- x[,-c(1,2,3)]
-attach(x)
 ```
 
-#### In order to perform cluster analysis, normalizing all columns
+#### In order to perform cluster analysis, normalizing all columns. Analysis will be performed both on original and scaled data.
 
 ```{r Scale}
 x.s <- scale(x)
@@ -42,50 +40,132 @@ x.s <- scale(x)
 
 ## Data Analysis (Scaled)
 
-### Clustering and Plotting
+### Clustering and Recording Clusters
+
+#### Scaled
+
+```{r Clustering_Scaled}
+# hierarchical
+hier.s <- hclust(dist(x.s))
+HIER.S <- NULL
+for(i in 2:12){
+  HIER.S <- cbind(HIER.S, cutree(hier.s, k = i) )
+}
+
+# kmeans
+KMEANS.S <- NULL
+for(i in 2:12){
+  KMEANS.S <- cbind(KMEANS.S, kmeans(x.s, centers = i)$cluster )
+}
+
+# diana
+dia.s <- diana(x.s)
+DIA.S <- NULL
+for(i in 2:12){
+  DIA.S <- cbind(DIA.S, cutree(dia.s, i) )
+}
+
+# pam
+PAM.S <- NULL
+for(i in 2:12){
+  pam <- pam(x.s, i, cluster.only = TRUE)
+  PAM.S <- cbind(PAM.S, pam)
+}
+rm(pam)
+```
+
+#### Unscaled
+
+```{r Clustering_Unscaled}
+# hierarchical
+hier.u <- hclust(dist(x))
+HIER.U <- NULL
+for(i in 2:12){
+  HIER.U <- cbind(HIER.U, cutree(hier.u, k = i) )
+}
+
+# kmeans
+KMEANS.U <- NULL
+for(i in 2:12){
+  KMEANS.U <- cbind(KMEANS.U, kmeans(x, centers = i)$cluster )
+}
+
+# diana
+dia.u <- diana(x)
+DIA.U <- NULL
+for(i in 2:12){
+  DIA.U <- cbind(DIA.U, cutree(dia.u, i) )
+}
+
+# pam
+PAM.U <- NULL
+for(i in 2:12){
+  pam <- pam(x, i, cluster.only = TRUE)
+  PAM.U <- cbind(PAM.U, pam)
+}
+rm(pam)
+```
+
+### Measuring Clustering Effectiveness
+
+#### Scaled
 
 ```{r Scaled_Euclidean}
 # Euclidean
-Euc.s <- clValid(x.s, 2:3, clMethods = c("hierarchical", "kmeans", "diana", "sota", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = "euclidean")
+Euc.s <- clValid(x.s, 2:12, clMethods = c("hierarchical", "kmeans", "diana", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = "euclidean")
 summary(Euc.s)
 plot(Euc.s)
 ```
 
 ```{r Scaled_Correlation}
 # Correlation
-Cor.s <- clValid(x.s, 2:20, clMethods = c("hierarchical", "kmeans", "diana", "sota", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = "correlation")
+Cor.s <- clValid(x.s, 2:12, clMethods = c("hierarchical", "kmeans", "diana", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = "correlation")
 summary(Cor.s)
 plot(Cor.s)
 ```
 
-### Remove outliers according to distance from centroids of groups. Perhaps, removing one by one and clustering the data after removal. 
-
-## Data Analysis (Not Scaled)
-
-### Clustering and Plotting
+#### Unscaled
 
 ```{r Unscaled_Euclidean}
 # Euclidean
-Euc <- clValid(x, 2:20, clMethods = c("hierarchical", "kmeans", "diana", "sota", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = "euclidean")
+Euc <- clValid(x, 2:12, clMethods = c("hierarchical", "kmeans", "diana", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = "euclidean")
 summary(Euc)
 plot(Euc)
 ```
 
 ```{r Unscaled_Correlation}
 # Correlation
-Cor <- clValid(x, 2:20, clMethods = c("hierarchical", "kmeans", "diana", "sota", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = "correlation")
+Cor <- clValid(x, 2:12, clMethods = c("hierarchical", "kmeans", "diana", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = "correlation")
 summary(Cor)
 plot(Cor)
 ```
 
-### Attaching cluster vector to dataset
+### Attaching cluster vectors to dataset copies
 
-```{r Attaching_ClValues}
-#x1k2 <- cbind(P,K2$cluster)
+```{r Attaching_Cluster_Values}
+# Scaled
+Final_Hier.s <- cbind(Final, HIER.S)
+Final_Kmeans.s <- cbind(Final, KMEANS.S)
+Final_Dia.s <- cbind(Final, DIA.S)
+Final_Pam.s <- cbind(Final, PAM.S)
+# Unscaled
+Final_Hier.u <- cbind(Final, HIER.U)
+Final_Kmeans.u <- cbind(Final, KMEANS.U)
+Final_Dia.u <- cbind(Final, DIA.U)
+Final_Pam.u <- cbind(Final, PAM.U)
 ```
 
-## Exporting dataset to .csv file
+## Exporting dataset to .csv files
 
 ```{r Exporting_File}
-#write.csv(x1k2, "ProjectStatistics_UNCSlideStainChar_ClusterK2.csv")
+# Scaled
+write.csv(Final_Hier.s, "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Scaled.csv")
+write.csv(Final_Kmeans.s, "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Scaled.csv")
+write.csv(Final_Dia.s, "ProjectStatistics_UNCSlideStainChar_Cluster_Dia_Scaled.csv")
+write.csv(Final_Pam.s, "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Scaled.csv")
+# Unscaled
+write.csv(Final_Hier.u, "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Unscaled.csv")
+write.csv(Final_Kmeans.u, "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Unscaled.csv")
+write.csv(Final_Dia.u, "ProjectStatistics_UNCSlideStainChar_Cluster_Dia_Unscaled.csv")
+write.csv(Final_Pam.u, "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Unscaled.csv")
 ```
