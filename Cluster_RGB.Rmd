@@ -1,7 +1,7 @@
 ---
 title: "Placenta Analysis - Slide Stain Cluster"
 author: "Ilya Kukovitskiy"
-date: "July 6, 2018"
+date: "July 21, 2018"
 output: html_document
 self_contained: no
 ---
@@ -10,9 +10,18 @@ self_contained: no
 set.seed(1)
 require(cluster)
 require(clValid)
+require(dplyr)
+require(xlsx)
+require(ggplot2)
 ```
 
-# RGB data
+# <a id="top"></a>RGB data
+
+[Skip Data Preprocessing](#DatAn)
+
+[Skip to Measuring Clustering Effectiveness](#Measure)
+
+[Skip to Boxplots of Cluster (by Feature)](#Box)
 
 ## Data Preprocessing
 
@@ -38,7 +47,10 @@ x <- x[,-c(1,2,3)]
 x.s <- scale(x)
 ```
 
-## Data Analysis (Scaled)
+
+[Back to top](#top)
+
+## <a id="DatAn"></a>Data Analysis
 
 ### Clustering and Recording Clusters
 
@@ -106,21 +118,24 @@ for(i in 2:12){
 rm(pam)
 ```
 
-### Measuring Clustering Effectiveness
+[Back to top](#top)
+
+### <a id="Measure"></a>Measuring Clustering Effectiveness
+
+Several different measures are used. All metrics but Dunn and Silhouette show more stability as the value decreases; Dunn and Silhouette show more stability as the value increases.
+Unfortunately, all graphs suggest either two or twelve clusters. This is not reflected in research.
 
 #### Scaled
 
 ```{r Scaled_Euclidean}
 # Euclidean
 Euc.s <- clValid(x.s, 2:12, clMethods = c("hierarchical", "kmeans", "diana", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = "euclidean")
-summary(Euc.s)
 plot(Euc.s)
 ```
 
 ```{r Scaled_Correlation}
 # Correlation
 Cor.s <- clValid(x.s, 2:12, clMethods = c("hierarchical", "kmeans", "diana", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = "correlation")
-summary(Cor.s)
 plot(Cor.s)
 ```
 
@@ -129,20 +144,19 @@ plot(Cor.s)
 ```{r Unscaled_Euclidean}
 # Euclidean
 Euc <- clValid(x, 2:12, clMethods = c("hierarchical", "kmeans", "diana", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = "euclidean")
-summary(Euc)
 plot(Euc)
 ```
 
 ```{r Unscaled_Correlation}
 # Correlation
 Cor <- clValid(x, 2:12, clMethods = c("hierarchical", "kmeans", "diana", "pam"), validation = c("internal", "stability"), maxitems = 800, metric = "correlation")
-summary(Cor)
 plot(Cor)
 ```
 
 ### Attaching cluster vectors to dataset copies
 
 ```{r Attaching_Cluster_Values}
+colnames(HIER.S) <- colnames(HIER.U) <- colnames(KMEANS.S) <- colnames(KMEANS.U) <- colnames(DIA.S) <- colnames(DIA.U) <- colnames(PAM.S) <- colnames(PAM.U) <- c("two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve")
 # Scaled
 Final_Hier.s <- cbind(Final, HIER.S)
 Final_Kmeans.s <- cbind(Final, KMEANS.S)
@@ -159,13 +173,549 @@ Final_Pam.u <- cbind(Final, PAM.U)
 
 ```{r Exporting_File}
 # Scaled
-write.csv(Final_Hier.s, "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Scaled.csv")
-write.csv(Final_Kmeans.s, "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Scaled.csv")
-write.csv(Final_Dia.s, "ProjectStatistics_UNCSlideStainChar_Cluster_Dia_Scaled.csv")
-write.csv(Final_Pam.s, "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Scaled.csv")
+try(write.xlsx(Final_Hier.s, "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Scaled.xlsx"))
+try(write.xlsx(Final_Kmeans.s, "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Scaled.xlsx"))
+try(write.xlsx(Final_Dia.s, "ProjectStatistics_UNCSlideStainChar_Cluster_Dia_Scaled.xlsx"))
+try(write.xlsx(Final_Pam.s, "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Scaled.xlsx"))
 # Unscaled
-write.csv(Final_Hier.u, "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Unscaled.csv")
-write.csv(Final_Kmeans.u, "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Unscaled.csv")
-write.csv(Final_Dia.u, "ProjectStatistics_UNCSlideStainChar_Cluster_Dia_Unscaled.csv")
-write.csv(Final_Pam.u, "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Unscaled.csv")
+try(write.xlsx(Final_Hier.u, "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Unscaled.xlsx"))
+try(write.xlsx(Final_Kmeans.u, "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Unscaled.xlsx"))
+try(write.xlsx(Final_Dia.u, "ProjectStatistics_UNCSlideStainChar_Cluster_Dia_Unscaled.xlsx"))
+try(write.xlsx(Final_Pam.u, "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Unscaled.xlsx"))
+```
+
+## Analysis of Clustering
+
+#### Reading in from file
+
+```{r reading_Clusters}
+Hier_s <- read.xlsx( "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Scaled.xlsx", sheetIndex = 1)
+Kmeans_s <- read.xlsx("ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Scaled.xlsx", sheetIndex = 1)
+Diana_s <- read.xlsx("ProjectStatistics_UNCSlideStainChar_Cluster_Dia_Scaled.xlsx", sheetIndex = 1)
+Pam_s <- read.xlsx("ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Scaled.xlsx", sheetIndex = 1)
+Hier_u <- read.xlsx("ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Unscaled.xlsx", sheetIndex = 1)
+Kmeans_u <- read.xlsx("ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Unscaled.xlsx", sheetIndex = 1)
+Diana_u <- read.xlsx("ProjectStatistics_UNCSlideStainChar_Cluster_Dia_Unscaled.xlsx", sheetIndex = 1)
+Pam_u <- read.xlsx("ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Unscaled.xlsx", sheetIndex = 1)
+```
+
+### Summary by Cluster
+
+#### Hierarchical Scaled
+
+```{r Hier_s.Summaries, echo=FALSE}
+Hier_s.2 <- group_by(Hier_s, two)
+Hier_s.3 <- group_by(Hier_s, three)
+Hier_s.4 <- group_by(Hier_s, four)
+Hier_s.5 <- group_by(Hier_s, five)
+Hier_s.6 <- group_by(Hier_s, six)
+Hier_s.7 <- group_by(Hier_s, seven)
+Hier_s.8 <- group_by(Hier_s, eight)
+Hier_s.9 <- group_by(Hier_s, nine)
+Hier_s.10 <- group_by(Hier_s, ten)
+Hier_s.11 <- group_by(Hier_s, eleven)
+Hier_s.12 <- group_by(Hier_s, twelve)
+
+# two
+Summ_Hier_s.2 <- summarise( Hier_s.2, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# three
+Summ_Hier_s.3 <- summarise( Hier_s.3, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# four
+Summ_Hier_s.4 <- summarise( Hier_s.4, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# five
+Summ_Hier_s.5 <- summarise( Hier_s.5, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# six
+Summ_Hier_s.6 <- summarise( Hier_s.6, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# seven
+Summ_Hier_s.7 <- summarise( Hier_s.7, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# eight
+Summ_Hier_s.8 <- summarise( Hier_s.8, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# nine
+Summ_Hier_s.9 <- summarise( Hier_s.9, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# ten
+Summ_Hier_s.10 <- summarise( Hier_s.10, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# eleven 
+Summ_Hier_s.11 <- summarise( Hier_s.11, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# twelve
+Summ_Hier_s.12 <- summarise( Hier_s.12, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+```
+
+#### K-Means Scaled
+
+```{r Kmeans_s.Summaries, echo=FALSE}
+Kmeans_s.2 <- group_by(Kmeans_s, two)
+Kmeans_s.3 <- group_by(Kmeans_s, three)
+Kmeans_s.4 <- group_by(Kmeans_s, four)
+Kmeans_s.5 <- group_by(Kmeans_s, five)
+Kmeans_s.6 <- group_by(Kmeans_s, six)
+Kmeans_s.7 <- group_by(Kmeans_s, seven)
+Kmeans_s.8 <- group_by(Kmeans_s, eight)
+Kmeans_s.9 <- group_by(Kmeans_s, nine)
+Kmeans_s.10 <- group_by(Kmeans_s, ten)
+Kmeans_s.11 <- group_by(Kmeans_s, eleven)
+Kmeans_s.12 <- group_by(Kmeans_s, twelve)
+
+# two
+Summ_Kmeans_s.2 <- summarise( Kmeans_s.2, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# three
+Summ_Kmeans_s.3 <- summarise( Kmeans_s.3, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# four
+Summ_Kmeans_s.4 <- summarise( Kmeans_s.4, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# five
+Summ_Kmeans_s.5 <- summarise( Kmeans_s.5, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# six
+Summ_Kmeans_s.6 <- summarise( Kmeans_s.6, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# seven
+Summ_Kmeans_s.7 <- summarise( Kmeans_s.7, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# eight
+Summ_Kmeans_s.8 <- summarise( Kmeans_s.8, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# nine
+Summ_Kmeans_s.9 <- summarise( Kmeans_s.9, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# ten
+Summ_Kmeans_s.10 <- summarise( Kmeans_s.10, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# eleven 
+Summ_Kmeans_s.11 <- summarise( Kmeans_s.11, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# twelve
+Summ_Kmeans_s.12 <- summarise( Kmeans_s.12, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+```
+
+#### Diana Scaled
+
+```{r Diana_s.Summaries, echo=FALSE}
+Diana_s.2 <- group_by(Diana_s, two)
+Diana_s.3 <- group_by(Diana_s, three)
+Diana_s.4 <- group_by(Diana_s, four)
+Diana_s.5 <- group_by(Diana_s, five)
+Diana_s.6 <- group_by(Diana_s, six)
+Diana_s.7 <- group_by(Diana_s, seven)
+Diana_s.8 <- group_by(Diana_s, eight)
+Diana_s.9 <- group_by(Diana_s, nine)
+Diana_s.10 <- group_by(Diana_s, ten)
+Diana_s.11 <- group_by(Diana_s, eleven)
+Diana_s.12 <- group_by(Diana_s, twelve)
+
+# two
+Summ_Diana_s.2 <- summarise( Diana_s.2, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# three
+Summ_Diana_s.3 <- summarise( Diana_s.3, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# four
+Summ_Diana_s.4 <- summarise( Diana_s.4, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# five
+Summ_Diana_s.5 <- summarise( Diana_s.5, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# six
+Summ_Diana_s.6 <- summarise( Diana_s.6, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# seven
+Summ_Diana_s.7 <- summarise( Diana_s.7, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# eight
+Summ_Diana_s.8 <- summarise( Diana_s.8, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# nine
+Summ_Diana_s.9 <- summarise( Diana_s.9, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# ten
+Summ_Diana_s.10 <- summarise( Diana_s.10, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# eleven 
+Summ_Diana_s.11 <- summarise( Diana_s.11, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# twelve
+Summ_Diana_s.12 <- summarise( Diana_s.12, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+```
+
+#### Pam Scaled
+
+```{r Pam_s.Summaries, echo=FALSE}
+Pam_s.2 <- group_by(Pam_s, two)
+Pam_s.3 <- group_by(Pam_s, three)
+Pam_s.4 <- group_by(Pam_s, four)
+Pam_s.5 <- group_by(Pam_s, five)
+Pam_s.6 <- group_by(Pam_s, six)
+Pam_s.7 <- group_by(Pam_s, seven)
+Pam_s.8 <- group_by(Pam_s, eight)
+Pam_s.9 <- group_by(Pam_s, nine)
+Pam_s.10 <- group_by(Pam_s, ten)
+Pam_s.11 <- group_by(Pam_s, eleven)
+Pam_s.12 <- group_by(Pam_s, twelve)
+
+# two
+Summ_Pam_s.2 <- summarise( Pam_s.2, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# three
+Summ_Pam_s.3 <- summarise( Pam_s.3, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# four
+Summ_Pam_s.4 <- summarise( Pam_s.4, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# five
+Summ_Pam_s.5 <- summarise( Pam_s.5, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# six
+Summ_Pam_s.6 <- summarise( Pam_s.6, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# seven
+Summ_Pam_s.7 <- summarise( Pam_s.7, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# eight
+Summ_Pam_s.8 <- summarise( Pam_s.8, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# nine
+Summ_Pam_s.9 <- summarise( Pam_s.9, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# ten
+Summ_Pam_s.10 <- summarise( Pam_s.10, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# eleven 
+Summ_Pam_s.11 <- summarise( Pam_s.11, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# twelve
+Summ_Pam_s.12 <- summarise( Pam_s.12, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+```
+
+#### Hierarchical Unscaled
+
+```{r Hier_u.Summaries, echo=FALSE}
+Hier_u.2 <- group_by(Hier_u, two)
+Hier_u.3 <- group_by(Hier_u, three)
+Hier_u.4 <- group_by(Hier_u, four)
+Hier_u.5 <- group_by(Hier_u, five)
+Hier_u.6 <- group_by(Hier_u, six)
+Hier_u.7 <- group_by(Hier_u, seven)
+Hier_u.8 <- group_by(Hier_u, eight)
+Hier_u.9 <- group_by(Hier_u, nine)
+Hier_u.10 <- group_by(Hier_u, ten)
+Hier_u.11 <- group_by(Hier_u, eleven)
+Hier_u.12 <- group_by(Hier_u, twelve)
+
+# two
+Summ_Hier_u.2 <- summarise( Hier_u.2, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# three
+Summ_Hier_u.3 <- summarise( Hier_u.3, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# four
+Summ_Hier_u.4 <- summarise( Hier_u.4, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# five
+Summ_Hier_u.5 <- summarise( Hier_u.5, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# six
+Summ_Hier_u.6 <- summarise( Hier_u.6, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# seven
+Summ_Hier_u.7 <- summarise( Hier_u.7, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# eight
+Summ_Hier_u.8 <- summarise( Hier_u.8, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# nine
+Summ_Hier_u.9 <- summarise( Hier_u.9, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# ten
+Summ_Hier_u.10 <- summarise( Hier_u.10, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# eleven 
+Summ_Hier_u.11 <- summarise( Hier_u.11, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# twelve
+Summ_Hier_u.12 <- summarise( Hier_u.12, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+```
+
+#### K-Means Unscaled
+
+```{r Kmeans_u.Summaries, echo=FALSE}
+Kmeans_u.2 <- group_by(Kmeans_u, two)
+Kmeans_u.3 <- group_by(Kmeans_u, three)
+Kmeans_u.4 <- group_by(Kmeans_u, four)
+Kmeans_u.5 <- group_by(Kmeans_u, five)
+Kmeans_u.6 <- group_by(Kmeans_u, six)
+Kmeans_u.7 <- group_by(Kmeans_u, seven)
+Kmeans_u.8 <- group_by(Kmeans_u, eight)
+Kmeans_u.9 <- group_by(Kmeans_u, nine)
+Kmeans_u.10 <- group_by(Kmeans_u, ten)
+Kmeans_u.11 <- group_by(Kmeans_u, eleven)
+Kmeans_u.12 <- group_by(Kmeans_u, twelve)
+
+# two
+Summ_Kmeans_u.2 <- summarise( Kmeans_u.2, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# three
+Summ_Kmeans_u.3 <- summarise( Kmeans_u.3, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# four
+Summ_Kmeans_u.4 <- summarise( Kmeans_u.4, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# five
+Summ_Kmeans_u.5 <- summarise( Kmeans_u.5, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# six
+Summ_Kmeans_u.6 <- summarise( Kmeans_u.6, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# seven
+Summ_Kmeans_u.7 <- summarise( Kmeans_u.7, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# eight
+Summ_Kmeans_u.8 <- summarise( Kmeans_u.8, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# nine
+Summ_Kmeans_u.9 <- summarise( Kmeans_u.9, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# ten
+Summ_Kmeans_u.10 <- summarise( Kmeans_u.10, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# eleven 
+Summ_Kmeans_u.11 <- summarise( Kmeans_u.11, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# twelve
+Summ_Kmeans_u.12 <- summarise( Kmeans_u.12, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+```
+
+#### Diana Unscaled
+
+```{r Diana_u.Summaries, echo=FALSE}
+Diana_u.2 <- group_by(Diana_u, two)
+Diana_u.3 <- group_by(Diana_u, three)
+Diana_u.4 <- group_by(Diana_u, four)
+Diana_u.5 <- group_by(Diana_u, five)
+Diana_u.6 <- group_by(Diana_u, six)
+Diana_u.7 <- group_by(Diana_u, seven)
+Diana_u.8 <- group_by(Diana_u, eight)
+Diana_u.9 <- group_by(Diana_u, nine)
+Diana_u.10 <- group_by(Diana_u, ten)
+Diana_u.11 <- group_by(Diana_u, eleven)
+Diana_u.12 <- group_by(Diana_u, twelve)
+
+# two
+Summ_Diana_u.2 <- summarise( Diana_u.2, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# three
+Summ_Diana_u.3 <- summarise( Diana_u.3, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# four
+Summ_Diana_u.4 <- summarise( Diana_u.4, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# five
+Summ_Diana_u.5 <- summarise( Diana_u.5, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# six
+Summ_Diana_u.6 <- summarise( Diana_u.6, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# seven
+Summ_Diana_u.7 <- summarise( Diana_u.7, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# eight
+Summ_Diana_u.8 <- summarise( Diana_u.8, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# nine
+Summ_Diana_u.9 <- summarise( Diana_u.9, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# ten
+Summ_Diana_u.10 <- summarise( Diana_u.10, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# eleven 
+Summ_Diana_u.11 <- summarise( Diana_u.11, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# twelve
+Summ_Diana_u.12 <- summarise( Diana_u.12, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+```
+
+#### Pam Unscaled
+
+```{r Pam_u.Summaries, echo=FALSE}
+Pam_u.2 <- group_by(Pam_u, two)
+Pam_u.3 <- group_by(Pam_u, three)
+Pam_u.4 <- group_by(Pam_u, four)
+Pam_u.5 <- group_by(Pam_u, five)
+Pam_u.6 <- group_by(Pam_u, six)
+Pam_u.7 <- group_by(Pam_u, seven)
+Pam_u.8 <- group_by(Pam_u, eight)
+Pam_u.9 <- group_by(Pam_u, nine)
+Pam_u.10 <- group_by(Pam_u, ten)
+Pam_u.11 <- group_by(Pam_u, eleven)
+Pam_u.12 <- group_by(Pam_u, twelve)
+
+# two
+Summ_Pam_u.2 <- summarise( Pam_u.2, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# three
+Summ_Pam_u.3 <- summarise( Pam_u.3, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# four
+Summ_Pam_u.4 <- summarise( Pam_u.4, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# five
+Summ_Pam_u.5 <- summarise( Pam_u.5, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# six
+Summ_Pam_u.6 <- summarise( Pam_u.6, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# seven
+Summ_Pam_u.7 <- summarise( Pam_u.7, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# eight
+Summ_Pam_u.8 <- summarise( Pam_u.8, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# nine
+Summ_Pam_u.9 <- summarise( Pam_u.9, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# ten
+Summ_Pam_u.10 <- summarise( Pam_u.10, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# eleven 
+Summ_Pam_u.11 <- summarise( Pam_u.11, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+# twelve
+Summ_Pam_u.12 <- summarise( Pam_u.12, th_BG.mean = mean(th_BG), th_BG.sd = sd(th_BG), Layer.mean.of.Layer.1..unclassified.mean = mean(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.1..unclassified.sd = sd(Layer.mean.of.Layer.1..unclassified), Layer.mean.of.Layer.2..unclassified.mean = mean(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.2..unclassified.sd = sd(Layer.mean.of.Layer.2..unclassified), Layer.mean.of.Layer.3..unclassified.mean = mean(Layer.mean.of.Layer.3..unclassified), Layer.mean.of.Layer.3..unclassified.sd = sd(Layer.mean.of.Layer.3..unclassified), th_RL1.mean = mean(th_RL1), th_RL2.mean = mean(th_RL2), th_RL3.mean = mean(th_RL3), th_RL1.sd = sd(th_RL1), th_RL2.sd = sd(th_RL2), th_RL3.sd = sd(th_RL3) )
+```
+
+### Attaching Summary as Sheets to Corresponding Files
+
+#### Hierarchical Scaled
+
+```{r Hier_s.Summaries_attach, echo=FALSE}
+try(write.xlsx(Summ_Hier_s.2, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Scaled.xlsx", sheetName="Two Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Hier_s.3, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Scaled.xlsx", sheetName="Three Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Hier_s.4, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Scaled.xlsx", sheetName="Four Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Hier_s.5, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Scaled.xlsx", sheetName="Five Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Hier_s.6, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Scaled.xlsx", sheetName="Six Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Hier_s.7, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Scaled.xlsx", sheetName="Seven Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Hier_s.8, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Scaled.xlsx", sheetName="Eight Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Hier_s.9, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Scaled.xlsx", sheetName="Nine Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Hier_s.10, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Scaled.xlsx", sheetName="Ten Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Hier_s.11, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Scaled.xlsx", sheetName="Eleven Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Hier_s.12, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Scaled.xlsx", sheetName="Twelve Cluster Summary", append=TRUE))
+```
+
+#### K-Means Scaled
+
+```{r Kmeans_s.Summaries_attach, echo=FALSE}
+try(write.xlsx(Summ_Kmeans_s.2, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Scaled.xlsx", sheetName="Two Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Kmeans_s.3, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Scaled.xlsx", sheetName="Three Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Kmeans_s.4, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Scaled.xlsx", sheetName="Four Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Kmeans_s.5, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Scaled.xlsx", sheetName="Five Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Kmeans_s.6, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Scaled.xlsx", sheetName="Six Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Kmeans_s.7, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Scaled.xlsx", sheetName="Seven Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Kmeans_s.8, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Scaled.xlsx", sheetName="Eight Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Kmeans_s.9, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Scaled.xlsx", sheetName="Nine Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Kmeans_s.10, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Scaled.xlsx", sheetName="Ten Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Kmeans_s.11, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Scaled.xlsx", sheetName="Eleven Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Kmeans_s.12, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Scaled.xlsx", sheetName="Twelve Cluster Summary", append=TRUE))
+```
+
+#### Diana Scaled
+
+```{r Diana_s.Summaries_attach, echo=FALSE}
+try(write.xlsx(Summ_Diana_s.2, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Scaled.xlsx", sheetName="Two Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Diana_s.3, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Scaled.xlsx", sheetName="Three Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Diana_s.4, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Scaled.xlsx", sheetName="Four Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Diana_s.5, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Scaled.xlsx", sheetName="Five Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Diana_s.6, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Scaled.xlsx", sheetName="Six Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Diana_s.7, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Scaled.xlsx", sheetName="Seven Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Diana_s.8, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Scaled.xlsx", sheetName="Eight Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Diana_s.9, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Scaled.xlsx", sheetName="Nine Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Diana_s.10, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Scaled.xlsx", sheetName="Ten Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Diana_s.11, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Scaled.xlsx", sheetName="Eleven Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Diana_s.12, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Scaled.xlsx", sheetName="Twelve Cluster Summary", append=TRUE))
+```
+
+#### Pam Scaled
+
+```{r Pam_s.Summaries_attach, echo=FALSE}
+try(write.xlsx(Summ_Pam_s.2, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Scaled.xlsx", sheetName="Two Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Pam_s.3, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Scaled.xlsx", sheetName="Three Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Pam_s.4, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Scaled.xlsx", sheetName="Four Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Pam_s.5, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Scaled.xlsx", sheetName="Five Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Pam_s.6, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Scaled.xlsx", sheetName="Six Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Pam_s.7, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Scaled.xlsx", sheetName="Seven Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Pam_s.8, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Scaled.xlsx", sheetName="Eight Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Pam_s.9, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Scaled.xlsx", sheetName="Nine Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Pam_s.10, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Scaled.xlsx", sheetName="Ten Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Pam_s.11, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Scaled.xlsx", sheetName="Eleven Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Pam_s.12, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Scaled.xlsx", sheetName="Twelve Cluster Summary", append=TRUE))
+```
+
+#### Hierarchical Unscaled
+
+```{r Hier_u.Summaries_attach, echo=FALSE}
+try(write.xlsx(Summ_Hier_u.2, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Unscaled.xlsx", sheetName="Two Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Hier_u.3, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Unscaled.xlsx", sheetName="Three Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Hier_u.4, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Unscaled.xlsx", sheetName="Four Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Hier_u.5, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Unscaled.xlsx", sheetName="Five Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Hier_u.6, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Unscaled.xlsx", sheetName="Six Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Hier_u.7, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Unscaled.xlsx", sheetName="Seven Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Hier_u.8, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Unscaled.xlsx", sheetName="Eight Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Hier_u.9, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Unscaled.xlsx", sheetName="Nine Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Hier_u.10, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Unscaled.xlsx", sheetName="Ten Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Hier_u.11, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Unscaled.xlsx", sheetName="Eleven Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Hier_u.12, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Hier_Unscaled.xlsx", sheetName="Twelve Cluster Summary", append=TRUE))
+```
+
+#### K-Means Unscaled
+
+```{r Kmeans_u.Summaries_attach, echo=FALSE}
+try(write.xlsx(Summ_Kmeans_u.2, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Unscaled.xlsx", sheetName="Two Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Kmeans_u.3, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Unscaled.xlsx", sheetName="Three Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Kmeans_u.4, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Unscaled.xlsx", sheetName="Four Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Kmeans_u.5, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Unscaled.xlsx", sheetName="Five Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Kmeans_u.6, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Unscaled.xlsx", sheetName="Six Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Kmeans_u.7, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Unscaled.xlsx", sheetName="Seven Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Kmeans_u.8, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Unscaled.xlsx", sheetName="Eight Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Kmeans_u.9, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Unscaled.xlsx", sheetName="Nine Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Kmeans_u.10, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Unscaled.xlsx", sheetName="Ten Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Kmeans_u.11, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Unscaled.xlsx", sheetName="Eleven Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Kmeans_u.12, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Kmeans_Unscaled.xlsx", sheetName="Twelve Cluster Summary", append=TRUE))
+```
+
+#### Diana Unscaled
+
+```{r Diana_u.Summaries_attach, echo=FALSE}
+try(write.xlsx(Summ_Diana_u.2, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Unscaled.xlsx", sheetName="Two Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Diana_u.3, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Unscaled.xlsx", sheetName="Three Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Diana_u.4, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Unscaled.xlsx", sheetName="Four Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Diana_u.5, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Unscaled.xlsx", sheetName="Five Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Diana_u.6, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Unscaled.xlsx", sheetName="Six Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Diana_u.7, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Unscaled.xlsx", sheetName="Seven Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Diana_u.8, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Unscaled.xlsx", sheetName="Eight Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Diana_u.9, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Unscaled.xlsx", sheetName="Nine Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Diana_u.10, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Unscaled.xlsx", sheetName="Ten Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Diana_u.11, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Unscaled.xlsx", sheetName="Eleven Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Diana_u.12, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Diana_Unscaled.xlsx", sheetName="Twelve Cluster Summary", append=TRUE))
+```
+
+#### Pam Unscaled
+
+```{r Pam_u.Summaries_attach, echo=FALSE}
+try(write.xlsx(Summ_Pam_u.2, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Unscaled.xlsx", sheetName="Two Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Pam_u.3, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Unscaled.xlsx", sheetName="Three Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Pam_u.4, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Unscaled.xlsx", sheetName="Four Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Pam_u.5, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Unscaled.xlsx", sheetName="Five Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Pam_u.6, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Unscaled.xlsx", sheetName="Six Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Pam_u.7, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Unscaled.xlsx", sheetName="Seven Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Pam_u.8, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Unscaled.xlsx", sheetName="Eight Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Pam_u.9, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Unscaled.xlsx", sheetName="Nine Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Pam_u.10, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Unscaled.xlsx", sheetName="Ten Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Pam_u.11, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Unscaled.xlsx", sheetName="Eleven Cluster Summary", append=TRUE))
+try(write.xlsx(Summ_Pam_u.12, file = "ProjectStatistics_UNCSlideStainChar_Cluster_Pam_Unscaled.xlsx", sheetName="Twelve Cluster Summary", append=TRUE))
+```
+
+[Back to top](#top)
+
+### <a id="Box"></a>Creating Boxplots of Clusters (by Feature)
+
+```{r, Boxplot_function}
+Box_by_Cluster <- function(x, Cluster, Cl.type = NULL){
+  # factorizing all cluster assingments
+  for(V_i in 12:22){
+    x[,V_i] <- as.factor(x[,V_i])
+  }
+  
+  # Printing Boxplots
+  for(V_i in 5:11){
+    V <- colnames(x)[V_i]
+    g <- ggplot(x, aes_string(x = Cluster, y = V))
+    print(g + geom_boxplot() + 
+          labs(title = paste("Box Plot of",Cl.type,"Clustering"),
+               x = "Cluster"))
+  }
+}
+
+Box_all_clusters <- function(x, Cl.type2 = NULL){
+  for(Cl.strings in c("two","three","four","five","six","seven","eight","nine","ten","eleven","twelve")){
+    print(paste("Summary for",Cl.strings,"clusters."))
+    Box_by_Cluster(x, Cl.strings, Cl.type = Cl.type2)
+  }
+}
+```
+
+#### Hierarchical Scaled
+
+```{r Hier_s.Boxplot}
+Box_all_clusters(Hier_s, "Hierarchical Scaled")
+```
+
+#### K-Means Scaled
+
+```{r Kmeans_s.Boxplot}
+Box_all_clusters(Kmeans_s, "K-Means Scaled")
+```
+
+#### Diana Scaled
+
+```{r Diana_s.Boxplot}
+Box_all_clusters(Diana_s, "Diana Scaled")
+```
+
+#### Pam Scaled
+
+```{r Pam_s.Boxplot}
+Box_all_clusters(Pam_s, "Pam Scaled")
+```
+
+#### Hierarchical Unscaled
+
+```{r Hier_u.Boxplot}
+Box_all_clusters(Hier_u, "Hierarchical Unscaled")
+```
+
+#### K-Means Unscaled
+
+```{r Kmeans_u.Boxplot}
+Box_all_clusters(Kmeans_u, "K-Means Unscaled")
+```
+
+#### Diana Unscaled
+
+```{r Diana_u.Boxplot}
+Box_all_clusters(Diana_u, "Diana Unscaled")
+```
+
+#### Pam Unscaled
+
+```{r Pam_u.Boxplot}
+Box_all_clusters(Pam_u, "Pam Unscaled")
 ```
