@@ -1,0 +1,243 @@
+---
+title: "Whole Slide SNA Analysis"
+author: "Ilya Kukovitskiy"
+date: "July 18, 2018"
+output: html_document
+self_contained: no
+---
+
+```{r Packages,results='hide',message=FALSE}
+set.seed(1)
+library(dplyr)
+library(ggplot2)
+library(xlsx)
+library(tree)
+```
+
+# <a id="top"></a>Whole Slide SNA
+
+# Data Preprocessing
+
+[Skip Data Preprocessing](#DatAn)
+
+#### Reading in and storing datasets from file
+
+```{r Reading_Files}
+d_Norm <- read.csv('ObjectStatistics_ROI_Norm.csv')
+d_FVP <- read.csv('ObjectStatistics_ROI_FVP.csv')
+d_GDM <- read.csv('ObjectStatistics_ROI_GDM.csv')
+d_PE <- read.csv('ObjectStatistics_ROI_PE.csv')
+
+d_Combined <- read.xlsx('SingleLabID_NormbyVilliArea_2.xlsx', sheetIndex = 1)
+```
+
+# <a id="DatAn"></a>Data Analysis
+
+[Skip to Summary of Norm](#Norm)
+
+[Skip to Summary of FVP](#FVP)
+
+[Skip to Summary of GDM](#GDM)
+
+[Skip to Summary of PE](#PE)
+
+[Skip to Summary of All Groups by Slide](#All)
+
+[Skip to Summary of All Groups by Patient Average](#Combined)
+
+##### Grouped by Gender
+
+[Skip to Summary of Norm](#Norm.G)
+
+[Skip to Summary of FVP](#FVP.G)
+
+[Skip to Summary of GDM](#GDM.G)
+
+[Skip to Summary of PE](#PE.G)
+
+##### Predicting Groups
+
+[Skip to Trees](#Pred.1)
+
+### By Patient
+
+```{r Boxplots_patient_function}
+Box_by_Patient <- function(x){
+  # foctorizing by name
+  x[,1] <- as.factor(x[,1])
+  
+  # printing boxplots
+  for(V_i in 4:24){
+    V <- colnames(x)[V_i]
+    N <- colnames(x)[1]
+    g <- ggplot(x, aes_string(x = N, y=V))
+    print(g + geom_boxplot() + 
+            labs(title = paste("Box Plot of",V,"by Patient"),
+                 x = "Patient"))
+  }
+}
+```
+
+#### <a id="Norm"></a>Norm
+
+```{r box_d_Norm}
+Box_by_Patient(d_Norm)
+```
+
+[Back to Top](#top)
+
+#### <a id="FVP"></a>FVP
+
+```{r box_d_FVP}
+Box_by_Patient(d_FVP)
+```
+
+[Back to Top](#top)
+
+#### <a id="GDM"></a>GDM
+
+```{r box_d_GDM}
+Box_by_Patient(d_GDM)
+```
+
+[Back to Top](#top)
+
+#### <a id="PE"></a>PE
+
+```{r box_d_PE}
+Box_by_Patient(d_PE)
+```
+
+[Back to Top](#top)
+
+### By Group
+
+#### <a id="All"></a>Individual Slide
+
+```{r making_d_All}
+# matching column names to combine, there was a typo
+colnames(d_FVP) = colnames(d_PE) = colnames(d_Norm) = colnames(d_GDM)
+
+# also removing variables that are irrelevent and may contain NA's
+d_All <- rbind.data.frame(d_Norm[,1:24], d_GDM[,1:24], d_FVP[,1:24], d_PE[,1:24])
+```
+
+```{r Boxplots_group_function}
+Box_by_Group <- function(x){
+  # factorizing by group
+  x[,3] <- as.factor(x[,3])
+  
+  # printing boxplots
+  for(V_i in 4:24){
+    V <- colnames(x)[V_i]
+    g <- ggplot(x, aes_string(x = "Group", y=V))
+    print(g + geom_boxplot()+
+            labs(title = paste("Boxplot of",V,"by Group"),
+                 x = "Group"))
+  }
+}
+```
+
+```{r box_d_All}
+Box_by_Group(d_All)
+```
+
+[Back to Top](#top)
+
+#### <a id="Combined"></a>Patient Average
+
+```{r Boxplots_group_function.2}
+Box_by_Group.2 <- function(x){
+  # factorizing by group
+  x[,1] <- as.factor(x[,1])
+  
+  # printing boxplots
+  for(V_i in 3:40){
+    V <- colnames(x)[V_i]
+    g <- ggplot(x, aes_string(x = "Group", y=V))
+    print(g + geom_boxplot()+
+            labs(title = paste("Boxplot of",V,"by Group"),
+                 x = "Group"))
+  }
+}
+```
+
+```{r}
+Box_by_Group.2(d_Combined)
+```
+
+[Back to Top](#top)
+
+## Summary by Gender
+
+```{r Boxplots_patient_function.G}
+Box_by_Patient.G <- function(x){
+  # foctorizing by gender
+  x[,36] <- as.factor(x[,36])
+  
+  # printing boxplots
+  for(V_i in 4:24){
+    V <- colnames(x)[V_i]
+    N <- colnames(x)[36]
+    g <- ggplot(x, aes_string(x = N, y=V))
+    print(g + geom_boxplot() + 
+            labs(title = paste("Box Plot of",V,"by Gender"),
+                 x = "Gender"))
+  }
+}
+```
+
+#### <a id="Norm.G"></a>Norm
+
+```{r box_d_Norm.G}
+Box_by_Patient.G(d_Norm)
+```
+
+[Back to Top](#top)
+
+#### <a id="FVP.G"></a>FVP
+
+```{r box_d_FVP.G}
+Box_by_Patient.G(d_FVP)
+```
+
+[Back to Top](#top)
+
+#### <a id="GDM.G"></a>GDM
+
+```{r box_d_GDM.G}
+Box_by_Patient.G(d_GDM)
+```
+
+[Back to Top](#top)
+
+#### <a id="PE.G"></a>PE
+
+```{r box_d_PE.G}
+Box_by_Patient.G(d_PE)
+```
+
+[Back to Top](#top)
+
+## <a id="Pred.1"></a>Prediction of Groups
+
+```{r making_d_Combined.tree}
+d_Combined.tree <- d_Combined[,2:40]
+```
+
+```{r}
+tree <- tree(Group~., d_Combined.tree)
+plot(tree)
+text(tree)
+
+Pred <- predict(tree, d_Combined.tree, type="class")
+Ta <- table(Pred, d_Combined.tree$Group) # Predictions on Y, actual values on X
+Ta
+
+right <- 0
+for(i in 1:4){
+  right <- (right + Ta[i,i])
+}
+right/sum(Ta)
+```
+
