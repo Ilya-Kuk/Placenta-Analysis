@@ -47,7 +47,6 @@ x <- x[,-c(1,2,3)]
 x.s <- scale(x)
 ```
 
-
 [Back to top](#top)
 
 ## <a id="DatAn"></a>Data Analysis
